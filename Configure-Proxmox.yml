@@ -1,0 +1,47 @@
+---
+- hosts: all
+  gather_facts: yes
+  become: yes
+  become_user: root
+  vars_prompt:
+    - name: ansible_become_password
+      prompt: Sudo password?
+      private: yes
+  tasks:
+    - name: Capture vars
+      set_fact:
+        prox_comm_string: "deb http://download.proxmox.com/debian/pve {{ ansible_distribution_release }} pve-no-subscription"
+      
+    - name: Touch community repo file
+      file:
+        path: '/etc/apt/sources.list.d/pve-no-enterprise.list'
+        state: file
+
+    - name: Write community line for proxmox
+      lineinfile:
+        line: "{{ prox_comm_string }}"
+        path: '/etc/apt/sources.list.d/pve-no-enterprise.list'
+        state: present
+      
+    - name: Disable Enterprise repo
+      lineinfile:
+        path: '/etc/apt/sources.list.d/pve-enterprise.list'
+        regexp: '^(.*)$'
+        line: '# \1'
+        state: present
+        
+    - name: Fix no subscription banner
+      lineinfile:
+        search_string: > 
+          "Ext.Msg.show({
+            title: gettext('No valid subscription')"
+        line: > 
+          "void({ //Ext.Msg.show({
+            title: gettext('No valid subscription')"
+        backup: yes
+        path: "/usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js"
+        state: present
+
+    # - name: Set dark mode
+    # - name: Mount Qnap
+    # - name: Mount Data1
