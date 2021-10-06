@@ -3,10 +3,16 @@
   gather_facts: yes
   become: yes
   become_user: root
-  vars_prompt:
-    - name: ansible_become_password
-      prompt: Sudo password?
-      private: yes
+  vars_files:
+    - ./proxsudo.yml
+    - ./qnap.yml
+  vars:
+    ansible_become_password: "{{ proxsudo }}"
+
+  # vars_prompt:
+  #   - name: ansible_become_password
+  #     prompt: Sudo password?
+  #     private: yes
   tasks:
     - name: Capture vars
       set_fact:
@@ -42,6 +48,15 @@
         path: "/usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js"
         state: present
 
-    # - name: Set dark mode
-    # - name: Mount Qnap
-    # - name: Mount Data1
+    - name: Get Dark Mode script
+      get_url:
+        url: "https://raw.githubusercontent.com/Weilbyte/PVEDiscordDark/master/PVEDiscordDark.sh"
+        dest: /tmp
+      register: darkscript
+
+    - name: Configure Dark Mode
+      ignore_errors: yes
+      shell: 
+        "./PVEDiscordDark.sh install"
+      args:
+        chdir: "/tmp"
